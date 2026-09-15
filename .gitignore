@@ -1,0 +1,15 @@
+# картинки для проб
+*.jpg
+*.jpeg
+*.png
+*.webp
+!docs/*.png
+
+# система
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# тесты
+node_modules/

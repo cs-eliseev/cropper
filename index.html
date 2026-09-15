@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ru" data-app="cropper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cropper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="themes/dark.css" id="themeLink">
+<style id="themeStyle"></style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="head">
+    <span class="head__title" data-i18n="appTitle">Кадрирование</span>
+    <span class="head__meta" id="headSize">3000×3000</span>
+
+    <div class="spacer"></div>
+
+    <button type="button" class="btn btn--icon" id="prefsBtn"
+            data-i18n-title="prefs" title="Настройки">⚙</button>
+
+    <div class="head__file">
+      <span class="head__dot head__dot--empty" id="fileDot"></span>
+      <span class="head__name" id="fileName" data-i18n="noFile">файл не выбран</span>
+    </div>
+
+    <button type="button" class="btn" id="pick" data-i18n="load">Загрузить</button>
+    <button type="button" class="btn btn--primary" id="export" data-i18n="save">Скачать</button>
+  </header>
+
+  <div class="app__body">
+
+    <section class="stage">
+      <div class="stage__area">
+        <div class="canvas" id="canvas">
+          <canvas class="canvas__el" id="cv" width="900" height="900"></canvas>
+          <div class="canvas__grid" id="grid"></div>
+          <div class="canvas__badge">
+            <span class="canvas__badge-text" id="badgeSize">3000×3000</span>
+            <span class="canvas__badge-text canvas__badge-text--dim" id="badgeZoom">100%</span>
+          </div>
+          <button type="button" class="canvas__drop" id="drop" data-i18n="dropHere">
+            Перетащите изображение или нажмите, чтобы выбрать файл
+          </button>
+        </div>
+      </div>
+      <div class="stage__foot">
+        <span class="stage__hint" data-i18n="stageHint">
+          Колесо — масштаб · перетаскивание — сдвиг · двойной клик — вписать
+        </span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn--pill btn--on" id="gridBtn" data-i18n="grid">Сетка</button>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div class="panel__head">
+        <button type="button" class="btn btn--icon" id="panelToggle"
+                data-i18n-title="panelCollapse" title="Свернуть панель">›</button>
+        <span class="panel__title" data-i18n="panelTitle">Кадр</span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn--mini btn--on" id="multi"
+                data-i18n-title="multiOn" title="Открывать несколько (включено)">∞</button>
+        <button type="button" class="btn btn--mini" id="all"
+                data-i18n-title="collapseAll" title="Свернуть все">⌃</button>
+      </div>
+
+      <div class="panel__body" id="panelBody">
+
+        <!-- размер холста -->
+        <section class="block block--open" data-block="size">
+          <button type="button" class="block__head">
+            <span class="block__mark">−</span>
+            <span class="block__label" data-i18n="blockSize">Размер холста</span>
+            <span class="block__summary" data-summary="size">Обложка</span>
+          </button>
+          <div class="block__body">
+            <div class="group__row">
+              <input type="text" inputmode="numeric" class="field__input field" id="cw" value="3000">
+              <span class="group__times">×</span>
+              <input type="text" inputmode="numeric" class="field__input field" id="ch" value="3000">
+              <button type="button" class="btn btn--square" id="swap"
+                      data-i18n-title="swap" title="Поменять сторонами">⇄</button>
+            </div>
+            <div class="group">
+              <div class="group__title" data-i18n="presets">Шаблоны</div>
+              <div class="group__list" id="presets"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- изображение -->
+        <section class="block block--open" data-block="frame">
+          <button type="button" class="block__head">
+            <span class="block__mark">−</span>
+            <span class="block__label" data-i18n="blockImage">Изображение</span>
+            <span class="block__summary" data-summary="frame">100%</span>
+          </button>
+          <div class="block__body">
+            <div class="field">
+              <div class="field__head">
+                <span class="field__label" data-i18n="zoom">Приближение</span>
+                <span class="field__value" id="zoomVal">100%</span>
+              </div>
+              <input type="range" class="field__range" id="zoom" min="5" max="400" step="1" value="100">
+            </div>
+            <div class="group__row">
+              <button type="button" class="btn btn--action" id="fill" data-i18n="fill">Заполнить</button>
+              <button type="button" class="btn btn--action" id="fit" data-i18n="fit">Вписать</button>
+              <button type="button" class="btn btn--action" id="center" data-i18n="center">Центр</button>
+            </div>
+            <div class="group__sep">
+              <div class="group__title" data-i18n="trimTitle">Подогнать холст</div>
+              <div class="group__row">
+                <button type="button" class="btn btn--action" id="trimVisible" data-i18n="trimVisible">По&nbsp;размеру</button>
+                <button type="button" class="btn btn--action" id="trimFit" data-i18n="trimFit">Вписать</button>
+                <button type="button" class="btn btn--action" id="trimMatch" data-i18n="trimMatch">Пропорционально</button>
+              </div>
+              <p class="hint" id="trimHint"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- сохранение -->
+        <section class="block" data-block="save">
+          <button type="button" class="block__head">
+            <span class="block__mark">+</span>
+            <span class="block__label" data-i18n="blockSave">Сохранение</span>
+            <span class="block__summary" data-summary="save">JPEG</span>
+          </button>
+          <div class="block__body">
+            <div class="group__row" id="formats"></div>
+            <div class="field">
+              <div class="field__head">
+                <span class="field__label" data-i18n="quality">Качество</span>
+                <span class="field__value" id="qualityVal">94</span>
+              </div>
+              <input type="range" class="field__range" id="quality" min="50" max="100" step="1" value="94">
+            </div>
+            <input type="text" class="field__input" id="outName" value="cover-3000x3000.jpg" spellcheck="false">
+            <button type="button" class="btn btn--wide" id="export2" data-i18n="save">Скачать</button>
+            <p class="hint" id="qualityHint"></p>
+            <p class="hint" data-i18n="exportHint">
+              Экспорт идёт из исходного файла в полном разрешении: превью уменьшено, результат — нет.
+            </p>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- настройки: язык, тема, загрузка своих файлов -->
+<div class="prefs" id="prefs" hidden>
+  <div class="prefs__row">
+    <span class="prefs__label" data-i18n="langLabel">Язык</span>
+    <select class="select prefs__select" id="langSelect"></select>
+    <button type="button" class="btn btn--pill" id="langFile" data-i18n="fileBtn">Файл…</button>
+    <button type="button" class="btn btn--pill" id="langTemplate" data-i18n="templateBtn">Шаблон</button>
+  </div>
+  <div class="prefs__row">
+    <span class="prefs__label" data-i18n="themeLabel">Тема</span>
+    <select class="select prefs__select" id="themeSelect"></select>
+    <button type="button" class="btn btn--pill" id="themeFile" data-i18n="fileBtn">Файл…</button>
+  </div>
+  <p class="hint" data-i18n="prefsHint"></p>
+  <div class="prefs__foot">
+    <button type="button" class="btn btn--pill" id="prefsReset" data-i18n="resetBtn">Сбросить своё</button>
+  </div>
+</div>
+
+<!-- настройки и словари -->
+<!-- настройки и словари -->
+<!-- настройки и словари -->
+<script src="config.js"></script>
+<script src="kernel/LanguageRegistry.js"></script>
+<script src="lang/ru.js"></script>
+<script src="lang/en.js"></script>
+
+<!-- ядро: контейнер и шина событий -->
+<script src="kernel/Container.js"></script>
+<script src="kernel/EventBus.js"></script>
+
+<!-- Core — общие возможности без точек входа -->
+<script src="Core/Geometry/Frame/Dictionaries/GeometryDictionary.js"></script>
+<script src="Core/Geometry/Frame/Exceptions/GeometryException.js"></script>
+<script src="Core/Geometry/Frame/Exceptions/InvalidSizeException.js"></script>
+<script src="Core/Geometry/Frame/Exceptions/InvalidZoomException.js"></script>
+<script src="Core/Geometry/Frame/Exceptions/InvalidOffsetException.js"></script>
+<script src="Core/Geometry/Frame/VO/OffsetVO.js"></script>
+<script src="Core/Geometry/Frame/VO/SizeVO.js"></script>
+<script src="Core/Geometry/Frame/VO/ZoomVO.js"></script>
+<script src="Core/Geometry/Frame/DTO/DrawRectDTO.js"></script>
+<script src="Core/Geometry/Frame/Services/FrameGeometryService.js"></script>
+<script src="Core/Storage/KeyValue/Contracts/KeyValueStorageInterface.js"></script>
+<script src="Core/Storage/KeyValue/Gateways/LocalStorageGateway.js"></script>
+<script src="Core/Storage/Files/DTO/PickedFileDTO.js"></script>
+<script src="Core/Storage/Files/Contracts/FileReaderInterface.js"></script>
+<script src="Core/Storage/Files/Contracts/FileWriterInterface.js"></script>
+<script src="Core/Storage/Files/Gateways/BrowserFileGateway.js"></script>
+
+<!-- Modules/Shared/Preferences — язык и тема -->
+<script src="Modules/Shared/Preferences/Dictionaries/PreferencesDictionary.js"></script>
+<script src="Modules/Shared/Preferences/Exceptions/PreferencesException.js"></script>
+<script src="Modules/Shared/Preferences/Exceptions/LanguageFileException.js"></script>
+<script src="Modules/Shared/Preferences/DTO/ImportedLanguageDTO.js"></script>
+<script src="Modules/Shared/Preferences/DTO/LanguageDTO.js"></script>
+<script src="Modules/Shared/Preferences/DTO/SwitchLanguageDTO.js"></script>
+<script src="Modules/Shared/Preferences/DTO/SwitchThemeDTO.js"></script>
+<script src="Modules/Shared/Preferences/DTO/ThemeDTO.js"></script>
+<script src="Modules/Shared/Preferences/DTO/ThemeTokensDTO.js"></script>
+<script src="Modules/Shared/Preferences/Contracts/LanguageRepositoryInterface.js"></script>
+<script src="Modules/Shared/Preferences/Contracts/ThemeRepositoryInterface.js"></script>
+<script src="Modules/Shared/Preferences/Contracts/ThemeTokensInterface.js"></script>
+<script src="Modules/Shared/Preferences/Contracts/TranslatorInterface.js"></script>
+<script src="Modules/Shared/Preferences/Events/LanguageChangedEvent.js"></script>
+<script src="Modules/Shared/Preferences/Events/ThemeChangedEvent.js"></script>
+<script src="Modules/Shared/Preferences/Services/TranslationService.js"></script>
+<script src="Modules/Shared/Preferences/Converters/LanguageFileMapper.js"></script>
+<script src="Modules/Shared/Preferences/Repositories/LanguageRepository.js"></script>
+<script src="Modules/Shared/Preferences/Repositories/ThemeRepository.js"></script>
+<script src="Modules/Shared/Preferences/Gateways/CssTokenGateway.js"></script>
+<script src="Modules/Shared/Preferences/Gateways/StyleSheetGateway.js"></script>
+<script src="Modules/Shared/Preferences/Facades/TranslatorFacade.js"></script>
+<script src="Modules/Shared/Preferences/Actions/ExportLanguageTemplateAction.js"></script>
+<script src="Modules/Shared/Preferences/Actions/ImportLanguageAction.js"></script>
+<script src="Modules/Shared/Preferences/Actions/ImportThemeAction.js"></script>
+<script src="Modules/Shared/Preferences/Actions/ResetPreferencesAction.js"></script>
+<script src="Modules/Shared/Preferences/Actions/SwitchLanguageAction.js"></script>
+<script src="Modules/Shared/Preferences/Actions/SwitchThemeAction.js"></script>
+<script src="Modules/Shared/Preferences/Ui/Views/PreferencesView.js"></script>
+<script src="Modules/Shared/Preferences/Ui/Views/StaticTextView.js"></script>
+<script src="Modules/Shared/Preferences/Ui/Controllers/PreferencesController.js"></script>
+<script src="Modules/Shared/Preferences/Listeners/OnLanguageChangedRenderPreferencesListener.js"></script>
+<script src="Modules/Shared/Preferences/Listeners/OnThemeChangedRefreshTokensListener.js"></script>
+<script src="Modules/Shared/Preferences/Providers/PreferencesProvider.js"></script>
+
+<!-- Modules/Shared/Panel — панель и её блоки -->
+<script src="Modules/Shared/Panel/DTO/PanelStateDTO.js"></script>
+<script src="Modules/Shared/Panel/DTO/SetAccordionModeDTO.js"></script>
+<script src="Modules/Shared/Panel/DTO/ToggleBlockDTO.js"></script>
+<script src="Modules/Shared/Panel/Contracts/PanelRepositoryInterface.js"></script>
+<script src="Modules/Shared/Panel/Events/PanelChangedEvent.js"></script>
+<script src="Modules/Shared/Panel/Repositories/PanelRepository.js"></script>
+<script src="Modules/Shared/Panel/Actions/SetAccordionModeAction.js"></script>
+<script src="Modules/Shared/Panel/Actions/ToggleAllBlocksAction.js"></script>
+<script src="Modules/Shared/Panel/Actions/ToggleBlockAction.js"></script>
+<script src="Modules/Shared/Panel/Actions/TogglePanelAction.js"></script>
+<script src="Modules/Shared/Panel/Ui/Views/PanelView.js"></script>
+<script src="Modules/Shared/Panel/Ui/Controllers/PanelController.js"></script>
+<script src="Modules/Shared/Panel/Listeners/PanelEventSubscriber.js"></script>
+<script src="Modules/Shared/Panel/Providers/PanelProvider.js"></script>
+
+<!-- Modules/Canvas/Size — размер холста -->
+<script src="Modules/Canvas/Size/DTO/ApplyCanvasPresetDTO.js"></script>
+<script src="Modules/Canvas/Size/DTO/CanvasPresetDTO.js"></script>
+<script src="Modules/Canvas/Size/DTO/CanvasSizeDTO.js"></script>
+<script src="Modules/Canvas/Size/DTO/ResizeCanvasDTO.js"></script>
+<script src="Modules/Canvas/Size/Contracts/CanvasRepositoryInterface.js"></script>
+<script src="Modules/Canvas/Size/Contracts/GetCanvasSizeInterface.js"></script>
+<script src="Modules/Canvas/Size/Contracts/ResizeCanvasInterface.js"></script>
+<script src="Modules/Canvas/Size/Events/CanvasResizedEvent.js"></script>
+<script src="Modules/Canvas/Size/Repositories/CanvasRepository.js"></script>
+<script src="Modules/Canvas/Size/Interactors/StoreCanvasSizeInteractor.js"></script>
+<script src="Modules/Canvas/Size/Actions/ApplyCanvasPresetAction.js"></script>
+<script src="Modules/Canvas/Size/Actions/GetCanvasSizeAction.js"></script>
+<script src="Modules/Canvas/Size/Actions/ResizeCanvasAction.js"></script>
+<script src="Modules/Canvas/Size/Actions/SwapCanvasSidesAction.js"></script>
+<script src="Modules/Canvas/Size/Ui/Views/CanvasSizeView.js"></script>
+<script src="Modules/Canvas/Size/Ui/Controllers/CanvasSizeController.js"></script>
+<script src="Modules/Canvas/Size/Listeners/OnCanvasResizedRenderSizeListener.js"></script>
+<script src="Modules/Canvas/Size/Listeners/OnLanguageChangedRenderSizeListener.js"></script>
+<script src="Modules/Canvas/Size/Providers/CanvasSizeProvider.js"></script>
+
+<!-- Modules/Image/Frame — кадр -->
+<script src="Modules/Image/Frame/Exceptions/FrameException.js"></script>
+<script src="Modules/Image/Frame/Exceptions/ImageNotReadableException.js"></script>
+<script src="Modules/Image/Frame/VO/SourceImageVO.js"></script>
+<script src="Modules/Image/Frame/DTO/FrameGeometryDTO.js"></script>
+<script src="Modules/Image/Frame/DTO/LoadImageDTO.js"></script>
+<script src="Modules/Image/Frame/DTO/MoveImageDTO.js"></script>
+<script src="Modules/Image/Frame/DTO/RenderFrameDTO.js"></script>
+<script src="Modules/Image/Frame/DTO/ZoomImageDTO.js"></script>
+<script src="Modules/Image/Frame/Contracts/FrameRepositoryInterface.js"></script>
+<script src="Modules/Image/Frame/Contracts/GetFrameGeometryInterface.js"></script>
+<script src="Modules/Image/Frame/Contracts/ImageDecoderInterface.js"></script>
+<script src="Modules/Image/Frame/Contracts/RenderFrameInterface.js"></script>
+<script src="Modules/Image/Frame/Events/FrameChangedEvent.js"></script>
+<script src="Modules/Image/Frame/Events/FramingGridToggledEvent.js"></script>
+<script src="Modules/Image/Frame/Events/ImageLoadedEvent.js"></script>
+<script src="Modules/Image/Frame/Repositories/FrameRepository.js"></script>
+<script src="Modules/Image/Frame/Gateways/CanvasPainterGateway.js"></script>
+<script src="Modules/Image/Frame/Gateways/ImageDecodeGateway.js"></script>
+<script src="Modules/Image/Frame/Actions/CenterImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/FillImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/FitCanvasToImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/FitImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/GetFrameGeometryAction.js"></script>
+<script src="Modules/Image/Frame/Actions/LoadImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/MatchCanvasToImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/MoveImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/RenderFrameAction.js"></script>
+<script src="Modules/Image/Frame/Actions/ToggleFramingGridAction.js"></script>
+<script src="Modules/Image/Frame/Actions/TrimCanvasToVisibleAction.js"></script>
+<script src="Modules/Image/Frame/Actions/ZoomImageAction.js"></script>
+<script src="Modules/Image/Frame/Ui/Views/FramePreviewView.js"></script>
+<script src="Modules/Image/Frame/Ui/Views/FrameSettingsView.js"></script>
+<script src="Modules/Image/Frame/Ui/Controllers/FrameController.js"></script>
+<script src="Modules/Image/Frame/Listeners/FrameEventSubscriber.js"></script>
+<script src="Modules/Image/Frame/Providers/ImageFrameProvider.js"></script>
+
+<!-- Modules/Export/Save — сохранение -->
+<script src="Modules/Export/Save/DTO/ChangeExportFormatDTO.js"></script>
+<script src="Modules/Export/Save/DTO/ChangeExportQualityDTO.js"></script>
+<script src="Modules/Export/Save/DTO/ExportFormatDTO.js"></script>
+<script src="Modules/Export/Save/DTO/ExportSettingsDTO.js"></script>
+<script src="Modules/Export/Save/DTO/ExportTargetDTO.js"></script>
+<script src="Modules/Export/Save/DTO/QualityEstimateDTO.js"></script>
+<script src="Modules/Export/Save/DTO/RenameExportFileDTO.js"></script>
+<script src="Modules/Export/Save/Contracts/CanvasFactoryInterface.js"></script>
+<script src="Modules/Export/Save/Contracts/ExportSettingsRepositoryInterface.js"></script>
+<script src="Modules/Export/Save/Events/ExportSettingsChangedEvent.js"></script>
+<script src="Modules/Export/Save/Events/ImageExportedEvent.js"></script>
+<script src="Modules/Export/Save/Services/FileNameService.js"></script>
+<script src="Modules/Export/Save/Services/QualityEstimateService.js"></script>
+<script src="Modules/Export/Save/Repositories/ExportSettingsRepository.js"></script>
+<script src="Modules/Export/Save/Gateways/BrowserCanvasGateway.js"></script>
+<script src="Modules/Export/Save/Actions/ChangeExportFormatAction.js"></script>
+<script src="Modules/Export/Save/Actions/ChangeExportQualityAction.js"></script>
+<script src="Modules/Export/Save/Actions/ExportImageAction.js"></script>
+<script src="Modules/Export/Save/Actions/RenameExportFileAction.js"></script>
+<script src="Modules/Export/Save/Actions/SuggestExportFileNameAction.js"></script>
+<script src="Modules/Export/Save/Ui/Views/ExportView.js"></script>
+<script src="Modules/Export/Save/Ui/Controllers/ExportController.js"></script>
+<script src="Modules/Export/Save/Listeners/ExportEventSubscriber.js"></script>
+<script src="Modules/Export/Save/Listeners/OnCanvasResizedRenameFileListener.js"></script>
+<script src="Modules/Export/Save/Providers/ExportSaveProvider.js"></script>
+
+<!-- сборка -->
+<script src="kernel/Bootstrap.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

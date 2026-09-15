@@ -1,0 +1,10 @@
+class ExportSettingsChangedEvent {
+  /** @param {string} format_id @param {number} quality @param {string} file_name */
+  constructor(format_id, quality, file_name) {
+    this.format_id = format_id;
+    this.quality = quality;
+    this.file_name = file_name;
+    this.occurred_at = new Date().toISOString();
+    Object.freeze(this);
+  }
+}

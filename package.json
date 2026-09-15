@@ -1,0 +1,15 @@
+{
+  "name": "cropper",
+  "private": true,
+  "type": "module",
+  "description": "Кадрирование картинок в браузере. Зависимостей нет: npm install не нужен.",
+  "imports": {
+    "#app": "./scripts/test-loader.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"Core/**/Tests/**/*.test.mjs\" \"Modules/**/Tests/**/*.test.mjs\"",
+    "arch": "node scripts/arch-check.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm run arch && npm test"
+  }
+}
