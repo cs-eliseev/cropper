@@ -11,7 +11,7 @@ open `index.html` in a browser and work offline.
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/cropper.git
+git clone https://github.com/cs-eliseev/cropper.git
 cd cropper
 xdg-open index.html        # macOS: open index.html
 ```
