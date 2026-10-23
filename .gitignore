@@ -13,3 +13,30 @@ Thumbs.db
 
 # тесты
 node_modules/
+
+# crew:gitignore-block
+# crew: файлы конвейера не для истории репозитория (ignore_crew=on; crew config set ignore_crew=off, если нужны в git)
+.claude/
+.crew/
+CLAUDE.md
+CONTEXT.md
+openspec/
+docs/adr/
+docs/backlog.md
+docs/research/
+.ccd/
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/memory-local/
+.claude/settings.json.bak-*
+.crew/current
+.crew/permissions.log
+.crew/context-guard.log
+openspec/changes/*/scout.md
+openspec/changes/*/redtest.md
+.crew/worktrees/
+.crew/locks/
+.crew/chat.log
+.crew/launches.log
+.crew/ext-errors.log
+# /crew:gitignore-block
