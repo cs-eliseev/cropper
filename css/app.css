@@ -225,6 +225,18 @@ body {
   border-color: var(--btn-on-hi);
 }
 
+/* главное действие инструмента: «Применить» у рамки обрезки */
+.btn--accent {
+  color: var(--fg-on);
+  background: var(--acc);
+  border-color: var(--acc);
+}
+
+.btn--accent:hover {
+  background: var(--acc-hi);
+  border-color: var(--acc-hi);
+}
+
 /* ------------------------------------------------------------------ stage */
 .stage {
   flex: 1 1 auto;
@@ -292,6 +304,71 @@ body {
     linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 33.333% 33.333%;
+}
+
+/* рамка обрезки: всё вне неё затемнено тенью самой рамки */
+.crop {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.crop__area {
+  position: absolute;
+  box-shadow: 0 0 0 100000px var(--crop-shade);
+  outline: 1px solid var(--acc);
+  cursor: move;
+}
+
+/* край рамки тянется в любом месте: невидимая полоса вдоль всей стороны,
+   ручки на углах лежат поверх неё */
+.crop__edge {
+  position: absolute;
+}
+
+.crop__edge--n,
+.crop__edge--s { left: 0; right: 0; height: 12px; cursor: ns-resize; }
+.crop__edge--e,
+.crop__edge--w { top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
+.crop__edge--n { top: -6px; }
+.crop__edge--s { bottom: -6px; }
+.crop__edge--e { right: -6px; }
+.crop__edge--w { left: -6px; }
+
+.crop__handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: var(--acc);
+  border: 1px solid var(--on-canvas-bg);
+  border-radius: 2px;
+}
+
+.crop__handle--nw { left: 0; top: 0; cursor: nwse-resize; }
+.crop__handle--n { left: 50%; top: 0; cursor: ns-resize; }
+.crop__handle--ne { left: 100%; top: 0; cursor: nesw-resize; }
+.crop__handle--e { left: 100%; top: 50%; cursor: ew-resize; }
+.crop__handle--se { left: 100%; top: 100%; cursor: nwse-resize; }
+.crop__handle--s { left: 50%; top: 100%; cursor: ns-resize; }
+.crop__handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
+.crop__handle--w { left: 0; top: 50%; cursor: ew-resize; }
+
+.crop__size {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2px 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--on-canvas-fg);
+  background: var(--on-canvas-bg);
+  border-radius: var(--r-sm);
+  pointer-events: none;
 }
 
 .canvas__badge {
@@ -503,6 +580,24 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--fg);
+}
+
+/* значение, которое можно вписать руками: выглядит подписью, пока не в фокусе */
+.field__value--edit {
+  width: 7ch;
+  padding: 2px 4px;
+  text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+}
+
+.field__value--edit:hover { border-color: var(--line-input); }
+
+.field__value--edit:focus {
+  outline: none;
+  background: var(--bg-input);
+  border-color: var(--acc);
 }
 
 .field__input {

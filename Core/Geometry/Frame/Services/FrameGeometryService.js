@@ -1,10 +1,11 @@
 /* Вся математика кадрирования. Чистая: получает значения, возвращает значения,
    ничего не хранит и ни о каком модуле не знает.
 
-   Соглашение: zoom = 1 — картинка заполняет холст целиком (cover); меньше
-   единицы — вписана с полями. Смещение 0..1 читается как background-position
-   в процентах, поэтому работает одинаково и когда картинка больше холста,
-   и когда меньше. */
+   Соглашение: zoom — абсолютный масштаб, 1 — пиксель картинки в пиксель холста.
+   Холст меняется — масштаб картинки остаётся прежним, как в редакторе.
+   «Заполнить» и «вписать» — это просто особые значения zoom для данного холста.
+   Смещение 0..1 читается как background-position в процентах, поэтому работает
+   одинаково и когда картинка больше холста, и когда меньше. */
 
 class FrameGeometryService {
   /**
@@ -17,12 +18,18 @@ class FrameGeometryService {
 
   /**
    * @param {SizeVO} canvas @param {SizeVO} image
+   * @returns {ZoomVO} приближение, при котором картинка заполняет холст без полей
+   */
+  coverZoom(canvas, image) {
+    return ZoomVO.clamped(this.coverScale(canvas, image));
+  }
+
+  /**
+   * @param {SizeVO} canvas @param {SizeVO} image
    * @returns {ZoomVO} приближение, при котором картинка видна целиком
    */
   containZoom(canvas, image) {
-    const canvasRatio = canvas.getRatio();
-    const sourceRatio = image.getRatio();
-    return ZoomVO.clamped(sourceRatio > canvasRatio ? canvasRatio / sourceRatio : sourceRatio / canvasRatio);
+    return ZoomVO.clamped(Math.min(canvas.getWidth() / image.getWidth(), canvas.getHeight() / image.getHeight()));
   }
 
   /**
@@ -30,9 +37,8 @@ class FrameGeometryService {
    * @returns {DrawRectDTO} прямоугольник картинки в единицах холста
    */
   drawRect(canvas, image, zoom, offset) {
-    const scale = this.coverScale(canvas, image) * zoom.getValue();
-    const width = image.getWidth() * scale;
-    const height = image.getHeight() * scale;
+    const width = image.getWidth() * zoom.getValue();
+    const height = image.getHeight() * zoom.getValue();
     return new DrawRectDTO(
       (canvas.getWidth() - width) * offset.getX(),
       (canvas.getHeight() - height) * offset.getY(),
@@ -74,6 +80,36 @@ class FrameGeometryService {
     const spanY = canvas.getHeight() - after.height;
     const x = Math.abs(spanX) > 0.001 ? (pointX - holdX * after.width) / spanX : offset.getX();
     const y = Math.abs(spanY) > 0.001 ? (pointY - holdY * after.height) / spanY : offset.getY();
+    return OffsetVO.clamped(x, y);
+  }
+
+  /**
+   * Та часть холста, где лежит картинка: пересечение картинки и холста.
+   * @param {SizeVO} canvas @param {SizeVO} image @param {ZoomVO} zoom @param {OffsetVO} offset
+   * @returns {DrawRectDTO} в единицах холста
+   */
+  visibleRect(canvas, image, zoom, offset) {
+    const rect = this.drawRect(canvas, image, zoom, offset);
+    const left = Math.max(0, rect.x);
+    const top = Math.max(0, rect.y);
+    const right = Math.min(canvas.getWidth(), rect.x + rect.width);
+    const bottom = Math.min(canvas.getHeight(), rect.y + rect.height);
+    return new DrawRectDTO(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+  }
+
+  /**
+   * Обрезка холста по области: картинка остаётся на месте, холст сжимается
+   * до области. Возвращает смещение для холста размером с область.
+   * @param {SizeVO} canvas @param {SizeVO} image @param {ZoomVO} zoom @param {OffsetVO} offset
+   * @param {DrawRectDTO} area область в единицах текущего холста
+   * @returns {OffsetVO}
+   */
+  offsetAfterCrop(canvas, image, zoom, offset, area) {
+    const rect = this.drawRect(canvas, image, zoom, offset);
+    const spanX = area.width - rect.width;
+    const spanY = area.height - rect.height;
+    const x = Math.abs(spanX) > 0.001 ? (rect.x - area.x) / spanX : 0.5;
+    const y = Math.abs(spanY) > 0.001 ? (rect.y - area.y) / spanY : 0.5;
     return OffsetVO.clamped(x, y);
   }
 

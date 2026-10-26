@@ -34,7 +34,13 @@ const CROPPER_CONFIG = Object.freeze({
     { id: 'cover', width: 3000, height: 3000, label: 'presetCover', meta: 'presetCoverMeta' },
     { id: 'card', width: 2000, height: 2700, label: 'presetCard', meta: 'presetCardMeta' },
     { id: 'story', width: 1080, height: 1920, label: 'presetStory', meta: 'presetStoryMeta' },
-    { id: 'banner', width: 1920, height: 1080, label: 'presetBanner', meta: 'presetBannerMeta' }
+    { id: 'banner', width: 1920, height: 1080, label: 'presetBanner', meta: 'presetBannerMeta' },
+    { id: 'yandex-photo', width: 3000, height: 4035, label: 'presetYandexPhoto', meta: 'presetYandexPhotoMeta' },
+    { id: 'yandex-photo-min', width: 1000, height: 1345, label: 'presetYandexPhotoMin', meta: 'presetYandexPhotoMinMeta' },
+    { id: 'vk-cover-mobile', width: 1500, height: 1120, label: 'presetVkCoverMobile', meta: 'presetVkCoverMobileMeta' },
+    { id: 'vk-cover-web', width: 1820, height: 458, label: 'presetVkCoverWeb', meta: 'presetVkCoverWebMeta' },
+    { id: 'zvuk-avatar', width: 3000, height: 3000, label: 'presetZvukAvatar', meta: 'presetZvukAvatarMeta' },
+    { id: 'zvuk-banner', width: 1800, height: 1000, label: 'presetZvukBanner', meta: 'presetZvukBannerMeta' }
   ],
   canvas_preset_index: 1,
 
@@ -52,6 +58,9 @@ const CROPPER_CONFIG = Object.freeze({
   matte: '#000000',
 
   grid: true,
-  out_name_pattern: 'cover-{w}x{h}.{ext}',
+  /* Имя файла: {name} — имя исходной картинки без расширения,
+     {w}×{h} — размер холста. Пока картинки нет, {name} = out_name_fallback. */
+  out_name_pattern: '{name}-{w}x{h}.{ext}',
+  out_name_fallback: 'cover',
   preview_max: 1400
 });

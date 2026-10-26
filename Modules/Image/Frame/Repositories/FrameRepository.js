@@ -1,13 +1,14 @@
 /* Что сейчас в кадре: картинка живёт только на время работы страницы,
-   приближение и положение — тоже. Между запусками сохранять нечего:
-   без картинки они бессмысленны. */
+   приближение, положение и область обрезки — тоже. Между запусками
+   сохранять нечего: без картинки они бессмысленны. */
 
 /** @implements {FrameRepositoryInterface} */
 class FrameRepository {
   #storage;
   #image = null;
-  #zoom = ZoomVO.fill();
+  #zoom = ZoomVO.actual();
   #offset = OffsetVO.centered();
+  #crop = null;
   #is_grid_visible;
 
   /** @param {KeyValueStorageInterface} storage @param {boolean} grid_by_default */
@@ -26,11 +27,12 @@ class FrameRepository {
   /** @returns {OffsetVO} */
   getOffset() { return this.#offset; }
 
-  /** @param {SourceImageVO} image новая картинка сбрасывает кадр в исходное */
-  updateImage(image) {
+  /** @param {SourceImageVO} image @param {ZoomVO} zoom новая картинка сбрасывает кадр в исходное */
+  updateImage(image, zoom) {
     this.#image = image;
-    this.#zoom = ZoomVO.fill();
+    this.#zoom = zoom;
     this.#offset = OffsetVO.centered();
+    this.#crop = null;
   }
 
   /** @param {ZoomVO} zoom @param {OffsetVO} offset */
@@ -38,6 +40,12 @@ class FrameRepository {
     this.#zoom = zoom;
     this.#offset = offset;
   }
+
+  /** @returns {DrawRectDTO|null} выделенная область в единицах холста; null — обрезка не начата */
+  findCrop() { return this.#crop; }
+
+  /** @param {DrawRectDTO|null} area */
+  updateCrop(area) { this.#crop = area; }
 
   /** @returns {boolean} видна ли сетка третей */
   isGridVisible() { return this.#is_grid_visible; }

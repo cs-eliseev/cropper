@@ -40,6 +40,23 @@
         <div class="canvas" id="canvas">
           <canvas class="canvas__el" id="cv" width="900" height="900"></canvas>
           <div class="canvas__grid" id="grid"></div>
+          <div class="crop" id="crop" hidden>
+            <div class="crop__area" id="cropArea" data-handle="move">
+              <span class="crop__edge crop__edge--n" data-handle="n"></span>
+              <span class="crop__edge crop__edge--e" data-handle="e"></span>
+              <span class="crop__edge crop__edge--s" data-handle="s"></span>
+              <span class="crop__edge crop__edge--w" data-handle="w"></span>
+              <span class="crop__handle crop__handle--nw" data-handle="nw"></span>
+              <span class="crop__handle crop__handle--n" data-handle="n"></span>
+              <span class="crop__handle crop__handle--ne" data-handle="ne"></span>
+              <span class="crop__handle crop__handle--e" data-handle="e"></span>
+              <span class="crop__handle crop__handle--se" data-handle="se"></span>
+              <span class="crop__handle crop__handle--s" data-handle="s"></span>
+              <span class="crop__handle crop__handle--sw" data-handle="sw"></span>
+              <span class="crop__handle crop__handle--w" data-handle="w"></span>
+              <span class="crop__size" id="cropSize"></span>
+            </div>
+          </div>
           <div class="canvas__badge">
             <span class="canvas__badge-text" id="badgeSize">3000×3000</span>
             <span class="canvas__badge-text canvas__badge-text--dim" id="badgeZoom">100%</span>
@@ -51,7 +68,7 @@
       </div>
       <div class="stage__foot">
         <span class="stage__hint" data-i18n="stageHint">
-          Колесо — масштаб · перетаскивание — сдвиг · двойной клик — вписать
+          Колесо — масштаб · перетаскивание — сдвиг · двойной клик — вписать · стрелки — сдвиг · C — обрезка
         </span>
         <div class="spacer"></div>
         <button type="button" class="btn btn--pill btn--on" id="gridBtn" data-i18n="grid">Сетка</button>
@@ -105,14 +122,26 @@
             <div class="field">
               <div class="field__head">
                 <span class="field__label" data-i18n="zoom">Приближение</span>
-                <span class="field__value" id="zoomVal">100%</span>
+                <input type="text" inputmode="decimal" class="field__value field__value--edit" id="zoomVal"
+                       value="100%" spellcheck="false" data-i18n-title="zoomInput" title="Введите масштаб в процентах">
               </div>
-              <input type="range" class="field__range" id="zoom" min="5" max="400" step="1" value="100">
+              <input type="range" class="field__range" id="zoom" min="-764" max="500" step="1" value="0">
             </div>
             <div class="group__row">
               <button type="button" class="btn btn--action" id="fill" data-i18n="fill">Заполнить</button>
               <button type="button" class="btn btn--action" id="fit" data-i18n="fit">Вписать</button>
               <button type="button" class="btn btn--action" id="center" data-i18n="center">Центр</button>
+              <button type="button" class="btn btn--action" id="actual"
+                      data-i18n-title="actualTitle" title="Пиксель в пиксель">100%</button>
+            </div>
+            <div class="group__sep">
+              <div class="group__title" data-i18n="cropGroup">Обрезка</div>
+              <div class="group__row">
+                <button type="button" class="btn btn--action" id="cropBtn" data-i18n="crop"
+                        data-i18n-title="cropTitle" title="Выделить область и обрезать холст по ней (C)">Выделить область</button>
+                <button type="button" class="btn btn--action btn--accent" id="cropApply" data-i18n="cropApply" hidden>Применить</button>
+                <button type="button" class="btn btn--action" id="cropCancel" data-i18n="cropCancel" hidden>Отмена</button>
+              </div>
             </div>
             <div class="group__sep">
               <div class="group__title" data-i18n="trimTitle">Подогнать холст</div>
@@ -282,7 +311,12 @@
 <!-- Modules/Image/Frame — кадр -->
 <script src="Modules/Image/Frame/Exceptions/FrameException.js"></script>
 <script src="Modules/Image/Frame/Exceptions/ImageNotReadableException.js"></script>
+<script src="Modules/Image/Frame/Exceptions/InvalidCropHandleException.js"></script>
+<script src="Modules/Image/Frame/Enums/CropHandleEnum.js"></script>
+<script src="Modules/Image/Frame/Dictionaries/FrameDictionary.js"></script>
 <script src="Modules/Image/Frame/VO/SourceImageVO.js"></script>
+<script src="Modules/Image/Frame/DTO/ChangeCropDTO.js"></script>
+<script src="Modules/Image/Frame/DTO/CropAreaDTO.js"></script>
 <script src="Modules/Image/Frame/DTO/FrameGeometryDTO.js"></script>
 <script src="Modules/Image/Frame/DTO/LoadImageDTO.js"></script>
 <script src="Modules/Image/Frame/DTO/MoveImageDTO.js"></script>
@@ -292,28 +326,38 @@
 <script src="Modules/Image/Frame/Contracts/GetFrameGeometryInterface.js"></script>
 <script src="Modules/Image/Frame/Contracts/ImageDecoderInterface.js"></script>
 <script src="Modules/Image/Frame/Contracts/RenderFrameInterface.js"></script>
+<script src="Modules/Image/Frame/Events/CropAreaChangedEvent.js"></script>
 <script src="Modules/Image/Frame/Events/FrameChangedEvent.js"></script>
 <script src="Modules/Image/Frame/Events/FramingGridToggledEvent.js"></script>
 <script src="Modules/Image/Frame/Events/ImageLoadedEvent.js"></script>
+<script src="Modules/Image/Frame/Services/CropAreaService.js"></script>
 <script src="Modules/Image/Frame/Repositories/FrameRepository.js"></script>
 <script src="Modules/Image/Frame/Gateways/CanvasPainterGateway.js"></script>
 <script src="Modules/Image/Frame/Gateways/ImageDecodeGateway.js"></script>
+<script src="Modules/Image/Frame/Actions/ApplyCropAction.js"></script>
+<script src="Modules/Image/Frame/Actions/CancelCropAction.js"></script>
 <script src="Modules/Image/Frame/Actions/CenterImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/ChangeCropAction.js"></script>
 <script src="Modules/Image/Frame/Actions/FillImageAction.js"></script>
 <script src="Modules/Image/Frame/Actions/FitCanvasToImageAction.js"></script>
 <script src="Modules/Image/Frame/Actions/FitImageAction.js"></script>
+<script src="Modules/Image/Frame/Actions/GetCropAreaAction.js"></script>
 <script src="Modules/Image/Frame/Actions/GetFrameGeometryAction.js"></script>
 <script src="Modules/Image/Frame/Actions/LoadImageAction.js"></script>
 <script src="Modules/Image/Frame/Actions/MatchCanvasToImageAction.js"></script>
 <script src="Modules/Image/Frame/Actions/MoveImageAction.js"></script>
 <script src="Modules/Image/Frame/Actions/RenderFrameAction.js"></script>
+<script src="Modules/Image/Frame/Actions/StartCropAction.js"></script>
 <script src="Modules/Image/Frame/Actions/ToggleFramingGridAction.js"></script>
 <script src="Modules/Image/Frame/Actions/TrimCanvasToVisibleAction.js"></script>
 <script src="Modules/Image/Frame/Actions/ZoomImageAction.js"></script>
+<script src="Modules/Image/Frame/Ui/Views/CropAreaView.js"></script>
 <script src="Modules/Image/Frame/Ui/Views/FramePreviewView.js"></script>
 <script src="Modules/Image/Frame/Ui/Views/FrameSettingsView.js"></script>
 <script src="Modules/Image/Frame/Ui/Controllers/FrameController.js"></script>
 <script src="Modules/Image/Frame/Listeners/FrameEventSubscriber.js"></script>
+<script src="Modules/Image/Frame/Listeners/OnCropAreaChangedRenderCropListener.js"></script>
+<script src="Modules/Image/Frame/Listeners/OnFrameChangedCancelCropListener.js"></script>
 <script src="Modules/Image/Frame/Providers/ImageFrameProvider.js"></script>
 
 <!-- Modules/Export/Save — сохранение -->
@@ -336,11 +380,13 @@
 <script src="Modules/Export/Save/Actions/ChangeExportQualityAction.js"></script>
 <script src="Modules/Export/Save/Actions/ExportImageAction.js"></script>
 <script src="Modules/Export/Save/Actions/RenameExportFileAction.js"></script>
+<script src="Modules/Export/Save/Actions/ResetExportFileNameAction.js"></script>
 <script src="Modules/Export/Save/Actions/SuggestExportFileNameAction.js"></script>
 <script src="Modules/Export/Save/Ui/Views/ExportView.js"></script>
 <script src="Modules/Export/Save/Ui/Controllers/ExportController.js"></script>
 <script src="Modules/Export/Save/Listeners/ExportEventSubscriber.js"></script>
 <script src="Modules/Export/Save/Listeners/OnCanvasResizedRenameFileListener.js"></script>
+<script src="Modules/Export/Save/Listeners/OnImageLoadedResetFileNameListener.js"></script>
 <script src="Modules/Export/Save/Providers/ExportSaveProvider.js"></script>
 
 <!-- сборка -->

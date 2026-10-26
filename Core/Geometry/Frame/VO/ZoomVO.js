@@ -1,4 +1,6 @@
-/* Приближение: 1 — картинка заполняет холст целиком, меньше — с полями. */
+/* Приближение — сколько пикселей холста приходится на пиксель картинки:
+   1 — пиксель в пиксель. Не зависит от размера холста, поэтому смена холста
+   не меняет масштаб картинки. */
 
 class ZoomVO {
   #value;
@@ -8,22 +10,23 @@ class ZoomVO {
     if (!isFinite(value) || value < GeometryDictionary.MIN_ZOOM || value > GeometryDictionary.MAX_ZOOM) {
       throw new InvalidZoomException(value);
     }
-    this.#value = Math.round(value * 1000) / 1000;
+    /* значащие цифры, а не знаки после запятой: мелкие масштабы тоже различимы */
+    this.#value = Number(value.toPrecision(6));
     Object.freeze(this);
   }
 
   /** @param {number} value @returns {ZoomVO} приближение, подтянутое к границам */
   static clamped(value) {
-    const v = isFinite(value) ? value : GeometryDictionary.FILL_ZOOM;
+    const v = isFinite(value) ? value : GeometryDictionary.ACTUAL_ZOOM;
     return new ZoomVO(Math.min(GeometryDictionary.MAX_ZOOM, Math.max(GeometryDictionary.MIN_ZOOM, v)));
   }
 
-  /** @returns {ZoomVO} */
-  static fill() { return new ZoomVO(GeometryDictionary.FILL_ZOOM); }
+  /** @returns {ZoomVO} пиксель в пиксель */
+  static actual() { return new ZoomVO(GeometryDictionary.ACTUAL_ZOOM); }
 
   getValue() { return this.#value; }
   getPercent() { return Math.round(this.#value * 100); }
-  isFill() { return this.#value === GeometryDictionary.FILL_ZOOM; }
+  isActual() { return this.#value === GeometryDictionary.ACTUAL_ZOOM; }
 
   /** @param {number} factor @returns {ZoomVO} */
   scaledBy(factor) { return ZoomVO.clamped(this.#value * factor); }

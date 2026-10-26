@@ -14,6 +14,8 @@ class ExportSettingsRepositoryInterface {
   updateQuality(quality) { throw new Error('not implemented'); }
   /** @param {string} file_name @param {boolean} is_manual */
   updateFileName(file_name, is_manual) { throw new Error('not implemented'); }
+  /** @param {string} file_name имя собрано заново, ручная правка забыта */
+  resetFileName(file_name) { throw new Error('not implemented'); }
   /** @returns {boolean} правил ли имя человек — тогда его не трогаем */
   isFileNameManual() { throw new Error('not implemented'); }
 }
