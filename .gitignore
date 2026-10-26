@@ -1,15 +1,41 @@
-# картинки для проб
+# test img
 *.jpg
 *.jpeg
 *.png
 *.webp
 !docs/*.png
 
-# система
+# system
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 
-# тесты
+# tests
 node_modules/
+
+# crew:gitignore-block
+.claude/
+.crew/
+CLAUDE.md
+CONTEXT.md
+openspec/
+docs/adr/
+docs/backlog.md
+docs/research/
+.ccd/
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/memory-local/
+.claude/settings.json.bak-*
+.crew/current
+.crew/permissions.log
+.crew/context-guard.log
+openspec/changes/*/scout.md
+openspec/changes/*/redtest.md
+.crew/worktrees/
+.crew/locks/
+.crew/chat.log
+.crew/launches.log
+.crew/ext-errors.log
+# /crew:gitignore-block

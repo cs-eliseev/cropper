@@ -24,14 +24,15 @@ class TrimCanvasToVisibleAction {
   run() {
     const image = this.#frame.findImage();
     if (!image) return null;
-    const size = this.#geometry.drawnSize(this.#canvas.run().toSize(), image.getSize(), this.#frame.getZoom());
+    const zoom = this.#frame.getZoom();
+    const size = this.#geometry.drawnSize(this.#canvas.run().toSize(), image.getSize(), zoom);
     const result = this.#resize.run(new ResizeCanvasDTO(size.getWidth(), size.getHeight()));
-    this.#resetFrame();
+    this.#centerFrame(zoom);
     return result;
   }
 
-  #resetFrame() {
-    const zoom = ZoomVO.fill();
+  /** масштаб тот же — холст теперь ровно по картинке, остаётся её отцентровать */
+  #centerFrame(zoom) {
     const offset = OffsetVO.centered();
     this.#frame.updateFrame(zoom, offset);
     this.#events.publish(new FrameChangedEvent(zoom.getValue(), offset.getX(), offset.getY()));

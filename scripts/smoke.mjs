@@ -55,17 +55,74 @@ const SCENARIO = `(async () => {
   await wait(400);
   check('картинка загрузилась', $('fileName').textContent === 'photo.png', $('fileName').textContent);
   check('кадр нарисован', $('cv').getContext('2d').getImageData(5, 5, 1, 1).data[3] === 255);
+  check('картинка встала в 100%', $('badgeZoom').textContent === '100%', $('badgeZoom').textContent);
+  check('холст по размеру картинки', $('headSize').textContent === '2400×1600', $('headSize').textContent);
+  check('имя файла от имени картинки', $('outName').value === 'photo-2400x1600.jpg', $('outName').value);
+
+  // масштаб руками и кнопкой 100%
+  $('zoomVal').value = '150'; $('zoomVal').dispatchEvent(new Event('change'));
+  check('масштаб вписан руками', $('badgeZoom').textContent === '150%', $('badgeZoom').textContent);
+  $('actual').click();
+  check('кнопка 100%', $('badgeZoom').textContent === '100%', $('badgeZoom').textContent);
 
   // холст и кадр
+  const zoom_before = $('badgeZoom').textContent;
   document.querySelector('[data-preset="story"]').click();
   check('шаблон применился', $('headSize').textContent === '1080×1920', $('headSize').textContent);
-  $('zoom').value = 140; $('zoom').dispatchEvent(new Event('input'));
+  check('смена холста не меняет масштаб', $('badgeZoom').textContent === zoom_before,
+        zoom_before + ' → ' + $('badgeZoom').textContent);
+  // стрелки двигают картинку: на холсте 1080×1920 картинка 2400 шире и уходит за края;
+  // точка у левого края холста была на светлом прямоугольнике, после сдвига — на фоне
+  const preview = $('cv');
+  const sample = () => preview.getContext('2d').getImageData(
+    Math.round(preview.width * 10 / 1080), Math.round(preview.height / 2), 1, 1).data[0];
+  const light_before = sample();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }));
+  check('стрелка сдвигает картинку', light_before > 200 && sample() < 100, light_before + ' → ' + sample());
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }));
+  check('и возвращает обратно', sample() === light_before, sample());
+
+  // ползунок логарифмический: 100 делений — удвоение
+  $('zoom').value = Math.round(Math.log2(1.4) * 100); $('zoom').dispatchEvent(new Event('input'));
   check('приближение сработало', $('badgeZoom').textContent === '140%', $('badgeZoom').textContent);
   check('запас качества посчитан', $('qualityHint').className.includes('warn'), $('qualityHint').className);
 
   // вызов чужого модуля через контракт
   $('trimFit').click();
   check('подгонка холста под картинку', $('headSize').textContent === '1080×720', $('headSize').textContent);
+
+  // обрезка рамкой: C, нарисовать рамку мышью, Enter
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', code: 'KeyC', bubbles: true }));
+  check('рамка обрезки открылась', !$('crop').hidden && !$('cropApply').hidden);
+  check('кнопки обрезки в панели', !!$('cropBtn').closest('.panel'));
+  const capture = Element.prototype.setPointerCapture;
+  Element.prototype.setPointerCapture = () => {};      // синтетический указатель захватить нельзя
+  const box = $('cv').getBoundingClientRect();
+  const at = (fx, fy) => ({ clientX: box.left + box.width * fx, clientY: box.top + box.height * fy,
+                            pointerId: 1, bubbles: true });
+  $('crop').dispatchEvent(new PointerEvent('pointerdown', at(0.1, 0.1)));
+  $('canvas').dispatchEvent(new PointerEvent('pointermove', at(0.6, 0.6)));
+  $('canvas').dispatchEvent(new PointerEvent('pointerup', at(0.6, 0.6)));
+  Element.prototype.setPointerCapture = capture;
+  check('рамка нарисована', $('cropSize').textContent === '540×360', $('cropSize').textContent);
+  // край тянется в любом месте: взяли правую сторону у верхней четверти и сдвинули влево
+  Element.prototype.setPointerCapture = () => {};
+  document.querySelector('.crop__edge--e').dispatchEvent(new PointerEvent('pointerdown', at(0.6, 0.2)));
+  $('canvas').dispatchEvent(new PointerEvent('pointermove', at(0.5, 0.9)));
+  $('canvas').dispatchEvent(new PointerEvent('pointerup', at(0.5, 0.9)));
+  Element.prototype.setPointerCapture = capture;
+  check('край рамки тянется в любом месте', $('cropSize').textContent === '432×360', $('cropSize').textContent);
+  const zoom_crop = $('badgeZoom').textContent;
+  // Enter жмёт «Применить», даже когда фокус на кнопке «Выделить область»
+  let applied = 0;
+  $('cropApply').addEventListener('click', () => applied++, { once: true });
+  $('cropBtn').focus();
+  const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+  $('cropBtn').dispatchEvent(enter);
+  check('Enter нажимает «Применить»', applied === 1 && enter.defaultPrevented, applied + ', ' + enter.defaultPrevented);
+  check('холст обрезан по рамке', $('headSize').textContent === '432×360', $('headSize').textContent);
+  check('обрезка не меняет масштаб', $('badgeZoom').textContent === zoom_crop, $('badgeZoom').textContent);
+  check('рамка убрана', $('crop').hidden);
 
   // экспорт: файл действительно собирается
   let downloaded = null;
@@ -74,7 +131,7 @@ const SCENARIO = `(async () => {
   $('export').click();
   await wait(600);
   HTMLAnchorElement.prototype.click = click;
-  check('файл отдан пользователю', downloaded === 'cover-1080x720.jpg', downloaded);
+  check('файл отдан пользователю', downloaded === 'photo-432x360.jpg', downloaded);
 
   // панель
   document.querySelector('[data-block="size"] .block__head').click();

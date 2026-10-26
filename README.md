@@ -19,8 +19,8 @@ xdg-open index.html        # macOS: open index.html
 That is the whole install. Then:
 
 1. Drop an image onto the canvas (or click it to pick a file).
-2. Choose a preset — cover, artist card, story, banner, avatar — or type your own size.
-3. Drag to move, scroll to zoom, double click to fit.
+2. Choose a preset — cover, artist card, story, banner, avatar, platform photos (Yandex, VK, Zvuk) — or type your own size.
+3. Drag to move, scroll to zoom, double click to fit. Press `C` to crop the canvas to a selected area.
 4. Pick a format, check the quality note, press **Download**.
 
 ## What it does
@@ -28,6 +28,13 @@ That is the whole install. Then:
 - **Canvas presets** for the sizes distributors and platforms ask for, plus any custom size.
 - **Real framing.** Drag and wheel work on the picture itself; the preview is
   scaled down but the export is always cut from the original file at full resolution.
+- **Zoom like in an editor.** 100% is one image pixel per canvas pixel; changing
+  the canvas size never rescales the picture — use **Fill** or **Fit** for that.
+  A new image opens at 100% on a canvas of its own size. The **100%** button resets
+  the zoom, and the percentage next to the slider can be typed in.
+- **File name** is built from the image name and the canvas size: `photo-1080x1920.jpg`.
+- **Crop tool.** Draw a selection over the picture, drag its handles (Shift keeps
+  the proportions), press Enter — the canvas becomes exactly that area.
 - **Quality guard.** The panel tells you how many pixels of the original land in
   the frame and warns before an upscale turns the picture soft.
 - **Fit the canvas to the image** — three ways: to the visible part, to the whole
@@ -46,7 +53,11 @@ language and the theme between sessions (`localStorage`).
 | --- | --- |
 | `0` | fit the whole image into the canvas |
 | `1` | fill the canvas |
-| double click | fit |
+| double click | fit (in crop mode — apply the crop) |
+| `C` | open / close the crop selection |
+| `Enter` / `Esc` | apply / cancel the crop |
+| arrows | move the picture by 1% of the canvas, 10% with `Shift` |
+| `Shift` + corner | keep the selection's proportions |
 
 ## Project layout
 
@@ -174,7 +185,7 @@ classes are BEM, so overriding a single block from your own file is easy too:
 | `formats`, `quality` | export formats and JPEG/WEBP quality |
 | `matte` | what fills the empty edges when exporting JPEG |
 | `grid` | rule-of-thirds grid |
-| `outNamePattern` | file name pattern, `{w}`, `{h}`, `{ext}` |
+| `out_name_pattern`, `out_name_fallback` | file name pattern: `{name}` — the source image name, `{w}`, `{h}`, `{ext}`; the fallback stands in for `{name}` until an image is loaded |
 | `previewMax` | cap on the internal preview resolution |
 
 The user always wins: language, theme and panel state stay in the browser.
@@ -185,7 +196,7 @@ The user always wins: language, theme and panel state stay in the browser.
 No dependencies, no `npm install` — everything runs on built-in tooling:
 
 ```bash
-npm test          # 160 unit tests on the built-in node --test runner
+npm test          # 181 unit tests on the built-in node --test runner
 npm run arch      # module boundary check
 npm run smoke     # a run in a real browser
 npm run check     # boundaries + tests

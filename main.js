@@ -32,6 +32,7 @@ Bootstrap.run(
     matte: CROPPER_CONFIG.matte,
     grid: CROPPER_CONFIG.grid,
     out_name_pattern: CROPPER_CONFIG.out_name_pattern,
+    out_name_fallback: CROPPER_CONFIG.out_name_fallback,
     preview_max: CROPPER_CONFIG.preview_max
   },
   [

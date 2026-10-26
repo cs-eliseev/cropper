@@ -50,6 +50,12 @@ class ExportSettingsRepository {
     if (is_manual) this.#is_manual = true;
   }
 
+  /** @param {string} file_name */
+  resetFileName(file_name) {
+    this.#file_name = file_name;
+    this.#is_manual = false;
+  }
+
   /** @returns {boolean} */
   isFileNameManual() { return this.#is_manual; }
 

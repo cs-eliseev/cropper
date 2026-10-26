@@ -28,12 +28,12 @@ const ExportSaveProvider = {
     const repository = container.get(ExportSettingsRepositoryToken);
     const canvas = container.get(GetCanvasSizeToken);
     const frame = container.get(GetFrameGeometryToken);
-    const names = new FileNameService(settings.out_name_pattern);
+    const names = new FileNameService(settings.out_name_pattern, settings.out_name_fallback);
     const quality = new QualityEstimateService(new FrameGeometryService());
     const translator = container.get(TranslatorToken);
 
     const view = new ExportView(repository, canvas, frame, quality, translator, nodes);
-    const suggest = new SuggestExportFileNameAction(repository, canvas, names, events);
+    const suggest = new SuggestExportFileNameAction(repository, canvas, frame, names, events);
 
     new ExportController({
       export: new ExportImageAction(
@@ -46,6 +46,9 @@ const ExportSaveProvider = {
     }, view, translator, nodes).mount();
 
     events.subscribe(CanvasResizedEvent, new OnCanvasResizedRenameFileListener(suggest));
+    events.subscribe(ImageLoadedEvent, new OnImageLoadedResetFileNameListener(
+      new ResetExportFileNameAction(repository, canvas, frame, names, events)
+    ));
 
     const subscriber = new ExportEventSubscriber(view);
     [ExportSettingsChangedEvent, CanvasResizedEvent, ImageLoadedEvent, FrameChangedEvent, LanguageChangedEvent]

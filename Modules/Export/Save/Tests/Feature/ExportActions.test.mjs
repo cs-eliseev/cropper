@@ -14,7 +14,7 @@ import { FakeCanvasFactory, FakeFileWriter } from '../Doubles/ExportDoubles.mjs'
 const {
   ExportSettingsRepository, ExportFormatDTO, FileNameService,
   ExportImageAction, ChangeExportFormatAction, ChangeExportQualityAction,
-  RenameExportFileAction, SuggestExportFileNameAction,
+  RenameExportFileAction, SuggestExportFileNameAction, ResetExportFileNameAction,
   ChangeExportFormatDTO, ChangeExportQualityDTO, RenameExportFileDTO,
   ExportSettingsChangedEvent, ImageExportedEvent
 } = app;
@@ -25,20 +25,21 @@ const FORMATS = [
   new ExportFormatDTO('WEBP', 'image/webp', 'webp', true, true)
 ];
 
-function build({ blob = { size: 4096 }, saved = null } = {}) {
+function build({ blob = { size: 4096 }, saved = null, frame = FakeFrameGeometry.empty() } = {}) {
   const storage = new InMemoryKeyValueStorage();
   if (saved) storage.set('export', saved);
   const settings = new ExportSettingsRepository(storage, FORMATS, 0.94);
   const canvas = new FakeCanvasSize(1080, 1920);
   const events = new SpyEventBus();
-  const names = new FileNameService('cover-{w}x{h}.{ext}');
+  const names = new FileNameService('{name}-{w}x{h}.{ext}', 'cover');
   const targets = new FakeCanvasFactory(blob);
   const writer = new FakeFileWriter();
   const render = new FakeRenderFrame();
 
   const module = {
     storage, settings, canvas, events, targets, writer, render,
-    suggest: new SuggestExportFileNameAction(settings, canvas, names, events),
+    suggest: new SuggestExportFileNameAction(settings, canvas, frame, names, events),
+    reset: new ResetExportFileNameAction(settings, canvas, frame, names, events),
     changeFormat: new ChangeExportFormatAction(settings, names, events),
     changeQuality: new ChangeExportQualityAction(settings, events),
     rename: new RenameExportFileAction(settings, events),
@@ -90,6 +91,20 @@ test('без правки имя следует за размером холст
   module.canvas.resizer.run({ width: 500, height: 500 });
   module.suggest.run();
   assert.equal(module.settings.getSettings().file_name, 'cover-500x500.jpg');
+});
+
+test('имя файла — имя картинки и размер холста', () => {
+  const module = build({ frame: new FakeFrameGeometry({ image_name: 'закат.png' }) });
+  assert.equal(module.settings.getSettings().file_name, 'закат-1080x1920.jpg');
+});
+
+test('новая картинка сбрасывает ручную правку имени', () => {
+  const module = build({ frame: new FakeFrameGeometry({ image_name: 'закат.png' }) });
+  module.rename.run(new RenameExportFileDTO('моё имя.jpg', true));
+  module.reset.run();
+  assert.equal(module.settings.getSettings().file_name, 'закат-1080x1920.jpg');
+  assert.equal(module.settings.isFileNameManual(), false);
+  assert.ok(module.events.last() instanceof ExportSettingsChangedEvent);
 });
 
 test('экспорт рисует чужой картинкой, отдаёт файл и сообщает о факте', async () => {

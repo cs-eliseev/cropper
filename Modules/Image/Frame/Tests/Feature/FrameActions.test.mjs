@@ -20,17 +20,23 @@ const {
   GetFrameGeometryAction, RenderFrameAction, LoadImageAction,
   ZoomImageAction, MoveImageAction, FitImageAction, FillImageAction, CenterImageAction,
   TrimCanvasToVisibleAction, FitCanvasToImageAction, MatchCanvasToImageAction,
-  ToggleFramingGridAction,
-  LoadImageDTO, ZoomImageDTO, MoveImageDTO, RenderFrameDTO,
-  ImageLoadedEvent, FrameChangedEvent, FramingGridToggledEvent, ImageNotReadableException
+  ToggleFramingGridAction, StartCropAction, ChangeCropAction, ApplyCropAction, CancelCropAction,
+  GetCropAreaAction, CropAreaService, OnFrameChangedCancelCropListener,
+  LoadImageDTO, ZoomImageDTO, MoveImageDTO, RenderFrameDTO, ChangeCropDTO, CropHandleEnum,
+  ImageLoadedEvent, FrameChangedEvent, FramingGridToggledEvent, CropAreaChangedEvent,
+  ImageNotReadableException
 } = app;
 
 function build({ withImage = true, canvas = new FakeCanvasSize(1000, 1000), decoder } = {}) {
   const storage = new InMemoryKeyValueStorage();
   const frame = new FrameRepository(storage, true);
-  if (withImage) frame.updateImage(sourceImage(2000, 1000));
-  const events = new SpyEventBus();
   const geometry = new FrameGeometryService();
+  if (withImage) {
+    /* картинка 2000×1000 заполняет холст 1000×1000 при масштабе 1 */
+    const image = sourceImage(2000, 1000);
+    frame.updateImage(image, geometry.coverZoom(canvas.run().toSize(), image.getSize()));
+  }
+  const events = new SpyEventBus();
   const painter = new FakePainter();
   const tokens = new FakeThemeTokens();
   const reader = new FakeFileReader();
@@ -40,16 +46,21 @@ function build({ withImage = true, canvas = new FakeCanvasSize(1000, 1000), deco
     storage, frame, events, canvas, painter, tokens, reader, decoder: image_decoder,
     read: new GetFrameGeometryAction(frame),
     render: new RenderFrameAction(frame, canvas, geometry, painter, tokens),
-    load: new LoadImageAction(reader, image_decoder, frame, events),
+    load: new LoadImageAction(reader, image_decoder, frame, canvas.resizer, events),
     zoom: new ZoomImageAction(frame, canvas, geometry, events),
     move: new MoveImageAction(frame, canvas, geometry, events),
     fit: new FitImageAction(frame, canvas, geometry, events),
-    fill: new FillImageAction(frame, events),
+    fill: new FillImageAction(frame, canvas, geometry, events),
     center: new CenterImageAction(frame, events),
     trimVisible: new TrimCanvasToVisibleAction(frame, canvas, canvas.resizer, geometry, events),
     trimFit: new FitCanvasToImageAction(frame, canvas, canvas.resizer, geometry, events),
     trimMatch: new MatchCanvasToImageAction(frame, canvas, canvas.resizer, geometry, events),
-    toggleGrid: new ToggleFramingGridAction(frame, events)
+    toggleGrid: new ToggleFramingGridAction(frame, events),
+    cropArea: new GetCropAreaAction(frame, canvas),
+    startCrop: new StartCropAction(frame, canvas, geometry, events),
+    changeCrop: new ChangeCropAction(frame, canvas, geometry, new CropAreaService(), events),
+    applyCrop: new ApplyCropAction(frame, canvas, canvas.resizer, geometry, events),
+    cancelCrop: new CancelCropAction(frame, events)
   };
 }
 
@@ -76,6 +87,10 @@ test('загрузка картинки публикует событие и с�
   assert.equal(module.reader.picks, 1, 'файл не запрошен');
   assert.equal(result.has_image, true);
   assert.equal(result.image_width, 2400);
+  /* картинка встаёт в 100%, холст — ровно по ней */
+  assert.equal(result.zoom, 1);
+  assert.equal(module.read.run().zoom, 1);
+  assert.deepEqual(module.canvas.resizes, [{ width: 2400, height: 1600 }]);
 
   const event = module.events.last();
   assert.ok(event instanceof ImageLoadedEvent);
@@ -93,7 +108,7 @@ test('принесённый файл не открывает диалог', asy
 test('отказ от выбора файла ничего не меняет', async () => {
   const module = build({ withImage: false });
   module.reader.picks = 0;
-  const empty = new LoadImageAction(FakeFileReader.empty(), module.decoder, module.frame, module.events);
+  const empty = new LoadImageAction(FakeFileReader.empty(), module.decoder, module.frame, module.canvas.resizer, module.events);
   assert.equal(await empty.run(new LoadImageDTO(null)), null);
   assert.equal(module.events.published.length, 0);
 });
@@ -114,7 +129,7 @@ test('приближение меняет масштаб и публикует �
 test('приближение за границами подтягивается', () => {
   const module = build();
   module.zoom.run(new ZoomImageDTO(999));
-  assert.equal(module.read.run().zoom, 4);
+  assert.equal(module.read.run().zoom, app.GeometryDictionary.MAX_ZOOM);
 });
 
 test('без картинки действия кадра ничего не делают', () => {
@@ -157,7 +172,7 @@ test('подгонка холста идёт через контракт чуж�
 
   assert.equal(module.canvas.resizes.length, 1, 'чужой модуль не позвали');
   assert.deepEqual(module.canvas.resizes[0], { width: 1000, height: 500 });
-  assert.equal(module.read.run().zoom, 1, 'после подгонки кадр не сброшен');
+  assert.equal(module.read.run().zoom, 0.5, 'картинка не заполнила новый холст');
   assert.ok(module.events.last() instanceof FrameChangedEvent);
 });
 
@@ -166,6 +181,91 @@ test('подгонка по видимой части учитывает мас�
   module.zoom.run(new ZoomImageDTO(2));
   module.trimVisible.run();
   assert.deepEqual(module.canvas.resizes[0], { width: 4000, height: 2000 });
+  assert.equal(module.read.run().zoom, 2, 'масштаб картинки не должен меняться');
+});
+
+test('смена холста не меняет масштаб картинки', () => {
+  const module = build();
+  module.zoom.run(new ZoomImageDTO(0.8));
+  module.canvas.resizer.run({ width: 1080, height: 1920 });
+
+  module.render.run(new RenderFrameDTO(drawContext(), 1080, 1920, null));
+  assert.equal(module.read.run().zoom, 0.8);
+  assert.equal(module.painter.last().rect.width, 1600, 'картинку растянуло вслед за холстом');
+});
+
+test('обрезка начинается с рамки по видимой картинке', () => {
+  const module = build();
+  module.fit.run();                       /* 1000×500 посередине холста */
+  const event = module.startCrop.run();
+
+  assert.ok(event instanceof CropAreaChangedEvent);
+  const area = module.cropArea.run();
+  assert.equal(area.is_active, true);
+  assert.equal(area.y, 0.25);
+  assert.equal(area.pixel_width, 1000);
+  assert.equal(area.pixel_height, 500);
+});
+
+test('рамку тянут за угол и она не выходит за картинку', () => {
+  const module = build();
+  module.fit.run();
+  module.startCrop.run();
+  /* новая рамка из точки (0.1; 0.3) вправо-вниз далеко за край */
+  module.changeCrop.run(new ChangeCropDTO(CropHandleEnum.SE, 0.1, 0.3, 0, 0, 2, 2, false));
+
+  const area = module.cropArea.run();
+  assert.equal(area.pixel_width, 900);
+  assert.equal(area.pixel_height, 450, 'рамка вылезла в поле под картинкой');
+});
+
+test('применение обрезает холст, картинка остаётся на месте и в том же масштабе', () => {
+  const module = build();
+  module.render.run(new RenderFrameDTO(drawContext(), 1000, 1000, null));
+  const before = module.painter.last().rect;
+
+  module.startCrop.run();
+  module.changeCrop.run(new ChangeCropDTO(CropHandleEnum.SE, 0.2, 0.1, 0, 0, 0.4, 0.3, false));
+  const result = module.applyCrop.run();
+
+  assert.deepEqual(module.canvas.resizes[0], { width: 400, height: 300 });
+  assert.equal(result.width, 400);
+  assert.equal(module.read.run().zoom, 1);
+  assert.equal(module.cropArea.run().is_active, false);
+  assert.ok(module.events.last() instanceof FrameChangedEvent);
+
+  module.render.run(new RenderFrameDTO(drawContext(), 400, 300, null));
+  const after = module.painter.last().rect;
+  assert.ok(Math.abs(after.x - (before.x - 200)) < 0.5, `картинка уехала: ${after.x}`);
+  assert.ok(Math.abs(after.y - (before.y - 100)) < 0.5, `картинка уехала: ${after.y}`);
+});
+
+test('пустая рамка и отмена холст не трогают', () => {
+  const module = build();
+  module.startCrop.run();
+  module.changeCrop.run(new ChangeCropDTO(CropHandleEnum.SE, 0.5, 0.5, 0, 0, 0, 0, false));
+  assert.equal(module.applyCrop.run(), null);
+
+  module.cancelCrop.run();
+  assert.equal(module.cropArea.run().is_active, false);
+  assert.equal(module.applyCrop.run(), null);
+  assert.equal(module.canvas.resizes.length, 0);
+});
+
+test('изменение кадра снимает рамку обрезки', () => {
+  const module = build();
+  module.events.subscribe(FrameChangedEvent, new OnFrameChangedCancelCropListener(module.cancelCrop));
+  module.startCrop.run();
+  module.zoom.run(new ZoomImageDTO(2));
+  assert.equal(module.cropArea.run().is_active, false);
+  assert.ok(module.events.last() instanceof CropAreaChangedEvent);
+});
+
+test('без картинки обрезка не начинается', () => {
+  const module = build({ withImage: false });
+  assert.equal(module.startCrop.run(), null);
+  assert.equal(module.changeCrop.run(new ChangeCropDTO(CropHandleEnum.SE, 0, 0, 0, 0, 1, 1, false)), null);
+  assert.equal(module.events.published.length, 0);
 });
 
 test('пропорциональная подгонка сохраняет длинную сторону', () => {

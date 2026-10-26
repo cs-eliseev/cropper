@@ -21,9 +21,11 @@ class FrameSettingsView {
     const geometry = this.#frame.run();
     const percent = Math.round(geometry.zoom * 100);
 
-    this.#nodes.zoom_value.textContent = percent + '%';
+    if (document.activeElement !== this.#nodes.zoom_value) this.#nodes.zoom_value.value = percent + '%';
     this.#nodes.summary.textContent = percent + '%';
-    if (document.activeElement !== this.#nodes.zoom) this.#nodes.zoom.value = percent;
+    if (document.activeElement !== this.#nodes.zoom) {
+      this.#nodes.zoom.value = Math.round(Math.log2(geometry.zoom) * FrameDictionary.ZOOM_SLIDER_STEPS_PER_DOUBLING);
+    }
 
     this.#nodes.hint.textContent = geometry.has_image
       ? this.#translator.translate('trimHintSource', {
