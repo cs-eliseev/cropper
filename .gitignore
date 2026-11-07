@@ -42,6 +42,7 @@ openspec/changes/*/redtest.md
 .crew/locks/
 .crew/chat.log
 .crew/launches.log
+.crew/prompts/
 .crew/after-merge.log
 .crew/ext-errors.log
 .crew/ext/
