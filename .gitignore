@@ -32,13 +32,17 @@ CLAUDE.local.md
 .crew/current
 .crew/autopilot
 .crew/permissions.log
+.crew/stop-failure.log
+.crew/limit-until
 .crew/context-guard.log
+.crew/shell-guard.log
 openspec/changes/*/scout.md
 openspec/changes/*/redtest.md
 .crew/worktrees/
 .crew/locks/
 .crew/chat.log
 .crew/launches.log
+.crew/after-merge.log
 .crew/ext-errors.log
 .crew/ext/
 .crew/stack.md
