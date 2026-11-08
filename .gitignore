@@ -29,13 +29,23 @@ CLAUDE.local.md
 .claude/memory-local/
 .claude/settings.json.bak-*
 .crew/current
+.crew/autopilot
 .crew/permissions.log
+.crew/stop-failure.log
+.crew/limit-until
 .crew/context-guard.log
+.crew/shell-guard.log
 openspec/changes/*/scout.md
 openspec/changes/*/redtest.md
 .crew/worktrees/
 .crew/locks/
 .crew/chat.log
 .crew/launches.log
+.crew/prompts/
+.crew/after-merge.log
 .crew/ext-errors.log
+.crew/ext/
+.crew/stack.md
+.crew/outside-note-*
+.crew/measure-agents.tsv
 # /crew:gitignore-block
